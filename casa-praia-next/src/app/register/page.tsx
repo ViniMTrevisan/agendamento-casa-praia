@@ -3,32 +3,32 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react'; // <-- 1. IMPORTE O 'signIn'
+import { signIn } from 'next-auth/react';
+import { toast } from 'react-hot-toast'; // <-- 1. Importar toast
+import { Spinner } from '@/components/Spinner'; // <-- 2. Importar Spinner
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Para desabilitar o botão
+  // const [error, setError] = useState(''); // Substituído por toast
+  // const [success, setSuccess] = useState(''); // Substituído por toast
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     setIsLoading(true);
 
-    // Validação de frontend (a API fará a validação final)
+    // Validações
     if (!username || !password || !nomeCompleto || !email) {
-      setError('Todos os campos são obrigatórios.');
+      toast.error('Todos os campos são obrigatórios.');
       setIsLoading(false);
       return;
     }
     if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.');
+      toast.error('A senha deve ter pelo menos 6 caracteres.');
       setIsLoading(false);
       return;
     }
@@ -37,52 +37,45 @@ export default function RegisterPage() {
       // --- ETAPA 1: REGISTRAR O USUÁRIO ---
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: username,
-          password: password,
+          username,
+          password,
           nome_completo: nomeCompleto,
-          email: email,
+          email,
         }),
       });
 
-      // Se o registro falhar (ex: usuário já existe)
       if (!res.ok) {
         const body = await res.json();
-        setError(body.error || 'Erro ao criar conta.');
-        setIsLoading(false);
-        return; // Para o processo aqui
+        throw new Error(body.error || 'Erro ao criar conta.');
       }
 
       // --- ETAPA 2: FAZER O LOGIN AUTOMÁTICO ---
-      // O registro foi um sucesso (res.ok), agora faça o login
-      setSuccess('Conta criada! Fazendo login...');
+      toast.success('Conta criada! Fazendo login...');
 
       const loginResult = await signIn('credentials', {
-        redirect: false, // Nós controlamos o redirecionamento
+        redirect: false,
         username: username,
         password: password,
       });
 
       if (loginResult?.error) {
-        // Isso é raro, mas pode acontecer
-        setError(
-          'Conta criada, mas o login automático falhou. Redirecionando para o login...'
-        );
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
-      } else if (loginResult?.ok) {
-        // --- ETAPA 3: SUCESSO TOTAL ---
-        // Login automático funcionou, vá para a home
-        setSuccess('Login realizado! Redirecionando...');
-        router.push('/'); // Redireciona para a página principal
-        router.refresh(); // Garante que a sessão seja atualizada no servidor (opcional mas bom)
+        throw new Error('Conta criada, mas o login automático falhou.');
       }
-    } catch (err) {
-      setError('Ocorreu um erro de conexão.');
+
+      // --- ETAPA 3: SUCESSO TOTAL ---
+      toast.success('Login realizado! Redirecionando...');
+      router.push('/');
+      router.refresh();
+
+    } catch (err: any) {
+      // --- MUDANÇA (TROCA DE DIV DE ERRO POR TOAST) ---
+      toast.error(err.message || 'Ocorreu um erro de conexão.');
+      if (err.message.includes('login automático falhou')) {
+        setTimeout(() => router.push('/login'), 2000);
+      }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -95,6 +88,8 @@ export default function RegisterPage() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* ... (Inputs de usuário, nome, email, senha inalterados) ... */}
+          
           <div>
             <label
               htmlFor="username"
@@ -160,23 +155,15 @@ export default function RegisterPage() {
             />
           </div>
 
-          {error && (
-            <div className="p-3 text-sm text-center text-red-800 bg-red-100 border border-red-300 rounded-md">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="p-3 text-sm text-center text-green-800 bg-green-100 border border-green-300 rounded-md">
-              {success}
-            </div>
-          )}
+          {/* --- MUDANÇA (DIVs de Erro/Sucesso Removidas) --- */}
 
+          {/* --- MUDANÇA (Botão com Spinner) --- */}
           <button
             type="submit"
-            disabled={isLoading} // Desabilita o botão durante o carregamento
-            className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+            className="flex items-center justify-center w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Criando conta...' : 'Criar Conta'}
+            {isLoading ? <Spinner /> : 'Criar Conta'}
           </button>
         </form>
         <div className="text-sm text-center text-gray-600">

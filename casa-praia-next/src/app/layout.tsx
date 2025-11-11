@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import AuthProvider from './context/AuthProvider';
+import { Toaster } from 'react-hot-toast'; // <-- 1. Importar
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,10 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      {/* APLICANDO O GRADIENTE E O ESTILO BASE AQUI */}
       <body
         className={`${inter.className} min-h-screen bg-gradient-to-r from-blue-500 to-purple-600`}
       >
+        {/* 2. Adicionar o <Toaster /> AQUI */}
+        <Toaster position="top-right" reverseOrder={false} />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
