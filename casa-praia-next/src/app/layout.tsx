@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import AuthProvider from './context/AuthProvider'; // <-- Importar
+import AuthProvider from './context/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Agendamento Casa de Praia',
   description: 'Sistema de Agendamento Familiar',
 };
@@ -17,8 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
-        {/* Envolva o children com o AuthProvider */}
+      {/* APLICANDO O GRADIENTE E O ESTILO BASE AQUI */}
+      <body
+        className={`${inter.className} min-h-screen bg-gradient-to-r from-blue-500 to-purple-600`}
+      >
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

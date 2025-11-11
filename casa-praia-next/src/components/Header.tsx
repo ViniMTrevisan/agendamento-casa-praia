@@ -11,16 +11,22 @@ type HeaderProps = {
 
 export function Header({ user }: HeaderProps) {
   return (
-    <header className="w-full p-4 bg-white shadow-md">
+    // --- MUDANÇA AQUI ---
+    // Removido 'bg-white' e 'shadow-md'.
+    // Adicionado 'border-b' e 'border-white/20' para uma separação sutil.
+    <header className="w-full p-4 border-b border-white border-opacity-20">
       <div className="container flex items-center justify-between mx-auto">
-        {/* Título */}
-        <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">
+        {/* --- MUDANÇA AQUI --- */}
+        {/* Título (removido o gradiente, aplicado 'text-white') */}
+        <div className="text-2xl font-bold text-white">
           🏖️ Casa de Praia
         </div>
 
         {/* Informações do Usuário e Logout */}
         <div className="flex items-center space-x-4">
-          <span className="hidden text-gray-700 sm:block">
+          {/* --- MUDANÇA AQUI --- */}
+          {/* Texto do usuário agora é branco */}
+          <span className="hidden text-white sm:block">
             {/* Usamos 'name' (nome_completo) que definimos na sessão */}
             Olá, {user.name}
           </span>
