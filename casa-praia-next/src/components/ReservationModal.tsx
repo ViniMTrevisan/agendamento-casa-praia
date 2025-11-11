@@ -2,11 +2,12 @@
 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Spinner } from './Spinner'; // <-- Importar o Spinner
 
 type Props = {
   selectedDates: Date[];
   onClose: () => void;
-  onConfirm: () => Promise<void>; // Função que chama a API
+  onConfirm: () => Promise<void>;
   isLoading: boolean;
 };
 
@@ -18,8 +19,8 @@ export function ReservationModal({
 }: Props) {
   if (selectedDates.length === 0) return null;
 
-  // Formata a data (ou intervalo)
   const formatRange = () => {
+    // ... (lógica inalterada)
     const sorted = selectedDates.sort((a, b) => a.getTime() - b.getTime());
     const start = format(sorted[0], 'dd/MM/yyyy', { locale: ptBR });
     const end = format(sorted[sorted.length - 1], 'dd/MM/yyyy', {
@@ -51,12 +52,13 @@ export function ReservationModal({
           >
             Cancelar
           </button>
+          {/* --- MUDANÇA AQUI --- */}
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center justify-center px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 w-40" // Largura fixa
           >
-            {isLoading ? 'Reservando...' : 'Confirmar Reserva'}
+            {isLoading ? <Spinner /> : 'Confirmar Reserva'}
           </button>
         </div>
       </div>

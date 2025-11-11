@@ -1,38 +1,40 @@
-'use client'; // Esta é uma página interativa (Client Component)
+'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react'; // Hook do NextAuth para login
-import { useRouter } from 'next/navigation'; // Hook do Next.js para navegação
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast'; // <-- 1. Importar toast
+import { Spinner } from '@/components/Spinner'; // <-- 2. Importar Spinner
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // <-- 3. Adicionar isLoading
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setIsLoading(true);
 
     try {
-      // 1. Tenta fazer o login
       const result = await signIn('credentials', {
-        redirect: false, // Não queremos que o NextAuth redirecione
+        redirect: false,
         username: username,
         password: password,
       });
 
-      // 2. Verifica o resultado
       if (result?.error) {
-        // Erro (ex: senha errada)
-        setError('Usuário ou senha inválidos.');
+        // --- MUDANÇA (TROCA DE DIV DE ERRO POR TOAST) ---
+        toast.error('Usuário ou senha inválidos.');
       } else if (result?.ok) {
-        // 3. Sucesso! Redireciona para a página principal
+        toast.success('Login realizado!');
         router.push('/');
       }
     } catch (err) {
-      setError('Ocorreu um erro. Tente novamente.');
+      toast.error('Ocorreu um erro. Tente novamente.');
+    } finally {
+      setIsLoading(false); // <-- 4. Parar o loading
     }
   };
 
@@ -45,6 +47,7 @@ export default function LoginPage() {
         <p className="text-center text-gray-600">Sistema de Agendamento</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ... (Inputs de usuário e senha inalterados) ... */}
           <div>
             <label
               htmlFor="username"
@@ -79,18 +82,16 @@ export default function LoginPage() {
               placeholder="Digite sua senha"
             />
           </div>
+          
+          {/* --- MUDANÇA (DIV de Erro Removida) --- */}
 
-          {error && (
-            <div className="p-3 text-sm text-center text-red-800 bg-red-100 border border-red-300 rounded-md">
-              {error}
-            </div>
-          )}
-
+          {/* --- MUDANÇA (Botão com Spinner) --- */}
           <button
             type="submit"
-            className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={isLoading}
+            className="flex items-center justify-center w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Entrar
+            {isLoading ? <Spinner /> : 'Entrar'}
           </button>
         </form>
 

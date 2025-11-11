@@ -2,12 +2,13 @@
 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Spinner } from './Spinner'; // <-- Importar o Spinner
 
 type Props = {
   dateToCancel: Date;
   nomeUsuario: string;
   onClose: () => void;
-  onConfirm: () => Promise<void>; // Função que chama a API
+  onConfirm: () => Promise<void>;
   isLoading: boolean;
 };
 
@@ -44,12 +45,13 @@ export function CancelModal({
           >
             Manter Reserva
           </button>
+          {/* --- MUDANÇA AQUI --- */}
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+            className="flex items-center justify-center px-4 py-2 font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 w-40" // Largura fixa
           >
-            {isLoading ? 'Cancelando...' : 'Sim, Cancelar'}
+            {isLoading ? <Spinner /> : 'Sim, Cancelar'}
           </button>
         </div>
       </div>
