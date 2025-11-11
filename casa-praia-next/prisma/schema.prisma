@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") 
+}
+
+// --- Schema migrado do seu banco.txt ---
+
+model Usuarios {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique @db.VarChar(25)
+  password_hash String   @db.VarChar(100)
+  nome_completo String   @db.VarChar(100)
+  email         String?  @db.VarChar(100)
+  data_criacao  DateTime @default(now())
+
+  // Relação: Um usuário pode ter muitas reservas
+  reservas Reservas[]
+}
+
+model Reservas {
+  id           Int      @id @default(autoincrement())
+  data         DateTime @unique @db.Date
+  usuario_id   Int
+  nome_usuario String   @db.VarChar(100)
+  data_criacao DateTime @default(now()) 
+
+  // Relação: Esta reserva pertence a um usuário
+  usuario Usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
