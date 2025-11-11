@@ -1,5 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -7,30 +6,76 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
 }
 
-// --- Schema migrado do seu banco.txt ---
+// --- TABELAS DO NEXTAUTH.JS ---
+// Precisamos delas para o PrismaAdapter
 
-model Usuarios {
-  id            Int      @id @default(autoincrement())
-  username      String   @unique @db.VarChar(25)
-  password_hash String   @db.VarChar(100)
-  nome_completo String   @db.VarChar(100)
-  email         String?  @db.VarChar(100)
-  data_criacao  DateTime @default(now())
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
-  // Relação: Um usuário pode ter muitas reservas
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- NOSSAS TABELAS DE NEGÓCIO ---
+
+// RENOMEAMOS 'Usuarios' para 'User' para seguir o padrão do NextAuth
+model User {
+  id            String    @id @default(cuid()) // Mudamos de Int para String (padrão NextAuth)
+  name          String? // 'nome_completo' agora é 'name'
+  username      String?   @unique @db.VarChar(25) // Nosso campo customizado
+  email         String?   @unique @db.VarChar(100)
+  password_hash String?   @db.VarChar(100) // Nosso campo customizado
+  emailVerified DateTime?
+  image         String?
+  data_criacao  DateTime  @default(now())
+
+  // Relações do NextAuth
+  accounts Account[]
+  sessions Session[]
+
+  // Nossa Relação
   reservas Reservas[]
 }
 
+// RENOMEAMOS 'Reservas' para 'Reservation' (boa prática, inglês)
 model Reservas {
   id           Int      @id @default(autoincrement())
   data         DateTime @unique @db.Date
-  usuario_id   Int
   nome_usuario String   @db.VarChar(100)
-  data_criacao DateTime @default(now()) 
+  data_criacao DateTime @default(now())
 
-  // Relação: Esta reserva pertence a um usuário
-  usuario Usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  // Relação com 'User' (antigo 'Usuarios')
+  usuario_id String // Deve ser String para bater com o ID do User
+  usuario    User   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
