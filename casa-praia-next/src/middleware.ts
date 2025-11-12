@@ -6,21 +6,30 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    if (
-      (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) &&
-      token?.role !== 'ADMIN'
-    ) {
-      return new NextResponse('Não autorizado', { status: 403 });
+    // Verifica se é rota de admin e se o usuário NÃO é admin
+    if (pathname.startsWith('/admin') && token?.role !== 'ADMIN') {
+      // Redireciona para home (usuário comum tentando acessar área admin)
+      return NextResponse.redirect(new URL('/', req.url));
     }
+
+    // Se chegou aqui, tem token válido e pode acessar
+    return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      // Este callback decide se o middleware deixa a requisição passar
+      // Se retornar true = middleware processa a requisição
+      // Se retornar false = NextAuth redireciona para /api/auth/signin
+      authorized: ({ token }) => {
+        // Se tem token válido, está autorizado a continuar
+        return !!token;
+      },
     },
   }
 );
 
-// --- CORREÇÃO AQUI: O matcher precisa das rotas raiz ---
+// Protege apenas as PÁGINAS (não APIs)
+// APIs fazem sua própria validação com getAuthenticatedUser()
 export const config = {
   matcher: [
     '/admin',
