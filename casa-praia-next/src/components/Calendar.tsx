@@ -276,10 +276,25 @@ export function Calendar() {
       body: JSON.stringify({ datas }),
     }).then(async (res) => {
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'Falha ao reservar');
+        // tentar ler JSON de erro; se falhar, tentar texto; fallback genérico
+        let body: any = null;
+        try {
+          body = await res.json();
+        } catch (e) {
+          try {
+            const text = await res.text();
+            body = text ? { error: text } : null;
+          } catch {
+            body = null;
+          }
+        }
+        throw new Error((body && body.error) || 'Falha ao reservar');
       }
-      return res.json();
+      try {
+        return await res.json();
+      } catch {
+        return null;
+      }
     });
 
     toast.promise(promise, {
@@ -303,10 +318,24 @@ export function Calendar() {
       method: 'DELETE',
     }).then(async (res) => {
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'Falha ao cancelar');
+        let body: any = null;
+        try {
+          body = await res.json();
+        } catch {
+          try {
+            const text = await res.text();
+            body = text ? { error: text } : null;
+          } catch {
+            body = null;
+          }
+        }
+        throw new Error((body && body.error) || 'Falha ao cancelar');
       }
-      return res.json();
+      try {
+        return await res.json();
+      } catch {
+        return null;
+      }
     });
 
     toast.promise(promise, {

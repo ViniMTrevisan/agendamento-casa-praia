@@ -16,9 +16,17 @@ export async function getAuthenticatedUser() {
 
   // Opcional, mas boa prática: verificar se o usuário da sessão
   // ainda existe no banco de dados.
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-  });
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+  } catch (err: any) {
+    // Logamos o erro e retornamos null — evitar que erros de conexão
+    // quebrem todas as APIs sem tratamento.
+    console.error('Erro ao buscar usuário na sessão:', err);
+    return null;
+  }
 
   if (!user) {
     return null;

@@ -1,4 +1,5 @@
-// schema.prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -9,9 +10,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- TABELAS DO NEXTAUTH.JS ---
-// Precisamos delas para o PrismaAdapter
+// --- NOVO ENUM PARA AS FUNÇÕES ---
+enum Role {
+  USER
+  ADMIN
+}
 
+// --- TABELAS DO NEXTAUTH.JS ---
+// ... (Account, Session, VerificationToken - Inalterados) ...
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -25,12 +31,9 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([provider, providerAccountId])
 }
-
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
@@ -38,44 +41,37 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
-
   @@unique([identifier, token])
 }
 
-// --- NOSSAS TABELAS DE NEGÓCIO ---
-
-// RENOMEAMOS 'Usuarios' para 'User' para seguir o padrão do NextAuth
+// --- MUDANÇA NO MODEL USER ---
 model User {
-  id            String    @id @default(cuid()) // Mudamos de Int para String (padrão NextAuth)
-  name          String? // 'nome_completo' agora é 'name'
-  username      String?   @unique @db.VarChar(25) // Nosso campo customizado
+  id            String    @id @default(cuid())
+  name          String?
+  username      String?   @unique @db.VarChar(25)
   email         String?   @unique @db.VarChar(100)
-  password_hash String?   @db.VarChar(100) // Nosso campo customizado
+  password_hash String?   @db.VarChar(100)
   emailVerified DateTime?
   image         String?
   data_criacao  DateTime  @default(now())
+  role          Role      @default(USER) // Por padrão, todos são 'USER'
 
-  // Relações do NextAuth
+  // Relações
   accounts Account[]
   sessions Session[]
-
-  // Nossa Relação
   reservas Reservas[]
 }
 
-// RENOMEAMOS 'Reservas' para 'Reservation' (boa prática, inglês)
+// --- Model Reservas (Inalterado) ---
 model Reservas {
   id           Int      @id @default(autoincrement())
   data         DateTime @unique @db.Date
   nome_usuario String   @db.VarChar(100)
   data_criacao DateTime @default(now())
-
-  // Relação com 'User' (antigo 'Usuarios')
-  usuario_id String // Deve ser String para bater com o ID do User
-  usuario    User   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  usuario_id   String
+  usuario      User     @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }

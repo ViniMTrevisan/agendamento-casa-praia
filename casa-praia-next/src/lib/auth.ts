@@ -1,14 +1,11 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 import { compare } from 'bcryptjs';
 
 export const authOptions: NextAuthOptions = {
-  // 1. Configurar o Adaptador do Prisma
   adapter: PrismaAdapter(prisma),
-
-  // 2. Configurar Provedores
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -20,9 +17,12 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.username || !credentials.password) {
           return null;
         }
+        
+        // --- MUDANÇA: Buscar o 'role' junto com o usuário ---
         const user = await prisma.user.findUnique({
           where: { username: credentials.username },
         });
+
         if (!user || !user.password_hash) {
           return null;
         }
@@ -33,55 +33,52 @@ export const authOptions: NextAuthOptions = {
         if (!isValidPassword) {
           return null;
         }
+        
+        // Retorna o 'role' para o callback 'jwt'
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           username: user.username,
+          role: user.role, // <-- Passa a 'role' do banco
         };
       },
     }),
   ],
 
-  // 3. Usar estratégia JWT (stateless)
   session: {
     strategy: 'jwt',
   },
 
-  // 4. Callbacks (AQUI ESTÁ A CORREÇÃO)
   callbacks: {
-    // Este callback é chamado QUANDO o token é criado OU atualizado
+    // --- MUDANÇA: Adicionar 'role' ao token ---
     async jwt({ token, user, trigger, session }) {
       
-      // 1. No login inicial
       if (user) {
         token.id = user.id;
         token.username = (user as any).username;
-        // 'name' e 'email' já são incluídos por padrão
+        token.role = user.role; // <-- Adiciona a 'role' ao token no login
       }
 
-      // 2. QUANDO 'update()' é chamado do cliente
       if (trigger === "update" && session) {
         token.name = session.name;
-        // (Se um dia atualizarmos o username, faríamos 'token.username = session.username' aqui)
       }
 
       return token;
     },
     
-    // Este callback é chamado QUANDO a sessão é lida
+    // --- MUDANÇA: Adicionar 'role' à sessão ---
     async session({ session, token }) {
-      // Passa os dados do TOKEN para a SESSÃO (que o cliente vê)
       if (session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
-        session.user.name = token.name; // Garante que o nome atualizado do token passe
+        session.user.name = token.name;
+        session.user.role = token.role; // <-- Passa a 'role' do token para a sessão
       }
       return session;
     },
   },
 
-  // 5. Páginas e Segredo
   pages: {
     signIn: '/login',
   },
