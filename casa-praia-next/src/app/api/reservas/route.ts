@@ -3,7 +3,6 @@ import { getAuthenticatedUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
-import type { Reservas } from '@prisma/client';
 
 // --- Rota GET (Listar Reservas) ---
 
@@ -21,7 +20,7 @@ export async function GET(req: Request) {
     const reservasMap: Record<string, any> = {};
 
     // --- CORREÇÃO 2: Adicionar o tipo '(reserva: Reservas)' ---
-    reservas.forEach((reserva: Reservas) => {
+    reservas.forEach((reserva: any) => {
       const dataKey = reserva.data.toISOString().split('T')[0];
       
       reservasMap[dataKey] = {
@@ -82,7 +81,7 @@ export async function POST(req: Request) {
         return {
           error: 'Datas já reservadas',
           // --- CORREÇÃO 5: Adicionar o tipo '(c: Reservas)' ---
-          datas_ocupadas: conflitos.map((c: Reservas) => c.data.toISOString().split('T')[0]),
+          datas_ocupadas: conflitos.map((c: any) => c.data.toISOString().split('T')[0]),
         };
       }
 
