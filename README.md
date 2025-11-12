@@ -1,5 +1,10 @@
 # 🏖️ Sistema de Agendamento (Casa de Praia)
 
+## 🚀 Deploy ao Vivo
+
+**A aplicação está disponível em:**
+**[https://agendamento-casa-praia.vercel.app](https://agendamento-casa-praia.vercel.app)**
+
 Um sistema de agendamento full-stack moderno, construído com Next.js, React, TypeScript, Prisma e Supabase (PostgreSQL). Este projeto foi refatorado de uma aplicação Node/Express + HTML/JS para uma arquitetura profissional baseada em Next.js (App Router).
 
 O sistema permite que usuários se registrem, façam login, gerenciem reservas em um calendário interativo e inclui um painel de administração completo para gerenciamento de usuários e reservas.
