@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CancelModal } from './CancelModal';
-import { vi } from 'vitest'; // Jest usa 'jest' globalmente, mas é bom ser explícito
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
