@@ -23,13 +23,9 @@ export default withAuth(
 // --- CORREÇÃO AQUI: O matcher precisa das rotas raiz ---
 export const config = {
   matcher: [
-    '/admin', // A página de admin
-    '/admin/:path*', // Sub-páginas de admin
-    '/api/admin', // A API de admin
-    '/api/admin/:path*', // Sub-rotas da API de admin
-    '/api/reservas', // A API de reservas (raiz)
-    '/api/reservas/:path*', // Sub-rotas (como delete)
-    '/api/profile', // A API de profile
-    '/api/profile/:path*',
+    '/admin',
+    '/admin/:path*',
+    '/perfil',
+    '/minhas-reservas',
   ],
 };
