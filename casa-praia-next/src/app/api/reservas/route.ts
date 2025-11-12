@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import type { Reservas } from '@prisma/client';
 
 // --- Rota GET (Listar Reservas) ---
 
@@ -17,18 +18,15 @@ export async function GET(req: Request) {
       orderBy: { data: 'asc' },
     });
 
-    // O frontend antigo esperava um objeto (mapa)
-    // Vamos replicar esse formato para facilitar o PR #7
     const reservasMap: Record<string, any> = {};
 
-    reservas.forEach((reserva) => {
-      // Formata a data para 'YYYY-MM-DD' (fuso UTC)
+    // --- CORREÇÃO 2: Adicionar o tipo '(reserva: Reservas)' ---
+    reservas.forEach((reserva: Reservas) => {
       const dataKey = reserva.data.toISOString().split('T')[0];
       
       reservasMap[dataKey] = {
         nome_usuario: reserva.nome_usuario,
         usuario_id: reserva.usuario_id,
-        // Adiciona o campo 'is_owner' que o script.js original usava
         is_owner: reserva.usuario_id === user.id,
       };
     });
@@ -45,11 +43,8 @@ export async function GET(req: Request) {
 
 // --- Rota POST (Criar Reservas Múltiplas) ---
 
-// Schema de validação (Zod)
 const createReservasSchema = z.object({
-  // Espera um array de strings de data (YYYY-MM-DD)
   datas: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1),
-  // O nome do usuário não é mais necessário, pegamos da sessão
 });
 
 export async function POST(req: Request) {
@@ -61,7 +56,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // 1. Validar o body
     const validation = createReservasSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -72,13 +66,12 @@ export async function POST(req: Request) {
 
     const { datas } = validation.data;
 
-    // Converte as strings de data (YYYY-MM-DD) para objetos Date (UTC)
-    const datasComoDate = datas.map(dataStr => new Date(`${dataStr}T00:00:00Z`));
+    // --- CORREÇÃO 3: Adicionar o tipo '(dataStr: string)' ---
+    const datasComoDate = datas.map((dataStr: string) => new Date(`${dataStr}T00:00:00Z`));
 
-    // 2. Usar uma Transação do Prisma
-    // Isso garante que ou TODAS as reservas são criadas, ou NENHUMA.
-    const resultado = await prisma.$transaction(async (tx) => {
-      // 2a. Verificar se alguma data já está reservada
+    // --- CORREÇÃO 4: Adicionar o tipo 'tx: Prisma.TransactionClient' ---
+    const resultado = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      
       const conflitos = await tx.reservas.findMany({
         where: {
           data: { in: datasComoDate },
@@ -86,21 +79,19 @@ export async function POST(req: Request) {
       });
 
       if (conflitos.length > 0) {
-        // Se houver conflito, cancele a transação
         return {
           error: 'Datas já reservadas',
-          datas_ocupadas: conflitos.map(c => c.data.toISOString().split('T')[0]),
+          // --- CORREÇÃO 5: Adicionar o tipo '(c: Reservas)' ---
+          datas_ocupadas: conflitos.map((c: Reservas) => c.data.toISOString().split('T')[0]),
         };
       }
 
-      // 2b. Preparar os dados para inserção
-      const dadosParaCriar = datasComoDate.map(data => ({
+      const dadosParaCriar = datasComoDate.map((data) => ({
         data: data,
         usuario_id: user.id,
-        nome_usuario: user.name || user.username || 'Usuário', // Pega o nome da sessão
+        nome_usuario: user.name || user.username || 'Usuário',
       }));
 
-      // 2c. Criar todas as reservas
       await tx.reservas.createMany({
         data: dadosParaCriar,
       });
@@ -108,7 +99,6 @@ export async function POST(req: Request) {
       return { success: true, count: dadosParaCriar.length };
     });
 
-    // 3. Tratar o resultado da transação
     if (resultado.error) {
       return NextResponse.json(
         { error: resultado.error, datas_ocupadas: resultado.datas_ocupadas },
