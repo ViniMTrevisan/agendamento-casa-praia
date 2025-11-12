@@ -1,0 +1,21 @@
+# Ficheiros do Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Dependências locais
+node_modules
+npm-debug.log
+.yarn
+
+# Ficheiros de Build e Cache
+.next
+*.tsbuildinfo
+
+# Env
+.env*
+!./.env.docker # (Vamos permitir este, se o criarmos)
+
+# Git
+.git
+.gitignore
