@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { Session } from 'next-auth';
-import Link from 'next/link'; // <-- 1. Importar o Link
+import Link from 'next/link'; 
 
 type HeaderProps = {
   user: Session['user'];
@@ -17,16 +17,23 @@ export function Header({ user }: HeaderProps) {
           🏖️ Casa de Praia
         </Link>
 
-        {/* Informações do Usuário e Logout */}
+        {/* --- MUDANÇA AQUI: Adicionado 'Meu Perfil' --- */}
         <div className="flex items-center space-x-4">
           
-          {/* --- 2. ADICIONAR ESTE LINK --- */}
           <Link 
             href="/minhas-reservas" 
             className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 bg-indigo-600 rounded-md sm:block hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             Minhas Reservas
           </Link>
+
+          <Link 
+            href="/perfil" 
+            className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 bg-indigo-600 rounded-md sm:block hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Meu Perfil
+          </Link>
+          {/* --- FIM DA MUDANÇA --- */}
           
           <span className="hidden text-white sm:block">
             Olá, {user.name}

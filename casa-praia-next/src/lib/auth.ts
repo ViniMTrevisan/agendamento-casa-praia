@@ -1,14 +1,14 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from '@/lib/prisma'; // O 'lib' está dentro de 'src', então este path está correto
+import { prisma } from '@/lib/prisma';
 import { compare } from 'bcryptjs';
 
 export const authOptions: NextAuthOptions = {
   // 1. Configurar o Adaptador do Prisma
   adapter: PrismaAdapter(prisma),
 
-  // 2. Configurar Provedores (só temos 1: Login/Senha)
+  // 2. Configurar Provedores
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -16,33 +16,23 @@ export const authOptions: NextAuthOptions = {
         username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
-      // 3. Lógica de Autorização
       async authorize(credentials) {
         if (!credentials?.username || !credentials.password) {
           return null;
         }
-
-        // Buscar usuário no banco
         const user = await prisma.user.findUnique({
           where: { username: credentials.username },
         });
-
-        // Verificar se o usuário existe e se tem senha
         if (!user || !user.password_hash) {
           return null;
         }
-
-        // 4. Comparar a senha
         const isValidPassword = await compare(
           credentials.password,
           user.password_hash
         );
-
         if (!isValidPassword) {
           return null;
         }
-
-        // 5. Sucesso! Retornar o usuário para o NextAuth
         return {
           id: user.id,
           name: user.name,
@@ -53,36 +43,47 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  // 6. Usar estratégia JWT (stateless)
+  // 3. Usar estratégia JWT (stateless)
   session: {
     strategy: 'jwt',
   },
 
-  // 7. Callbacks para customizar o token e a sessão
+  // 4. Callbacks (AQUI ESTÁ A CORREÇÃO)
   callbacks: {
-    // Adiciona 'username' e 'id' ao token JWT
-    async jwt({ token, user }) {
+    // Este callback é chamado QUANDO o token é criado OU atualizado
+    async jwt({ token, user, trigger, session }) {
+      
+      // 1. No login inicial
       if (user) {
         token.id = user.id;
         token.username = (user as any).username;
+        // 'name' e 'email' já são incluídos por padrão
       }
+
+      // 2. QUANDO 'update()' é chamado do cliente
+      if (trigger === "update" && session) {
+        token.name = session.name;
+        // (Se um dia atualizarmos o username, faríamos 'token.username = session.username' aqui)
+      }
+
       return token;
     },
-    // Adiciona 'username' e 'id' ao objeto 'session' (acessível no frontend)
+    
+    // Este callback é chamado QUANDO a sessão é lida
     async session({ session, token }) {
+      // Passa os dados do TOKEN para a SESSÃO (que o cliente vê)
       if (session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
+        session.user.name = token.name; // Garante que o nome atualizado do token passe
       }
       return session;
     },
   },
 
-  // 8. Páginas customizadas
+  // 5. Páginas e Segredo
   pages: {
     signIn: '/login',
   },
-
-  // 9. Segredo
   secret: process.env.AUTH_SECRET,
 };
