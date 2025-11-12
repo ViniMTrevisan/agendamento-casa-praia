@@ -1,16 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
+// --- CORREÇÃO 1: Remover a importação que falha ---
 import { Prisma } from '@prisma/client';
 
 // Schema de validação (Zod)
-// E-mail agora é obrigatório
 const registerSchema = z.object({
   username: z.string().min(3, "Username deve ter no mínimo 3 caracteres.").max(25),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres."),
   nome_completo: z.string().min(3, "Nome completo é obrigatório.").max(100),
-  
-  // E-mail é obrigatório e deve ser um e-mail válido
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
 });
 
@@ -21,7 +19,6 @@ export async function POST(req: Request) {
     // 1. Validar o body
     const validation = registerSchema.safeParse(body);
     if (!validation.success) {
-      // Retorna a primeira mensagem de erro do Zod
       const firstError = validation.error.issues[0]?.message || 'Dados inválidos.';
       return new Response(
         JSON.stringify({ error: firstError }),
@@ -43,7 +40,6 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      // Retorna qual campo está em conflito
       const field = existingUser.username === username ? 'Username' : 'Email';
       return new Response(JSON.stringify({ error: `${field} já existe` }), {
         status: 409, // Conflict
@@ -69,19 +65,27 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify(userWithoutPassword), { status: 201 });
     
   } catch (error) {
-    // 6. Tratamento de Erro (se o 'findFirst' falhar - race condition)
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      // 'P2002' é o código para 'Unique constraint failed'
-      if (error.code === 'P2002') {
-        const target = (error.meta?.target as string[]) || [];
-        return new Response(
-          JSON.stringify({
-            error: `O campo '${target.join(', ')}' já está em uso.`,
-          }),
-          { status: 409 } // Conflict
-        );
-      }
+    
+    // --- CORREÇÃO 2: Mudar o bloco CATCH ---
+    // Usamos verificação de propriedade (type guard) em vez de 'instanceof'
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'P2002' // P2002 é 'Unique constraint failed'
+    ) {
+      // O TS não sabe o tipo de 'meta', então usamos 'any' para ser pragmático
+      const meta = (error as any).meta;
+      const target = (meta?.target as string[]) || [];
+      
+      return new Response(
+        JSON.stringify({
+          error: `O campo '${target.join(', ')}' já está em uso.`,
+        }),
+        { status: 409 } // Conflict
+      );
     }
+    // --- FIM DA CORREÇÃO ---
 
     // 7. Erro genérico
     console.error('Erro no registro:', error);
