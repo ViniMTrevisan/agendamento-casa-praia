@@ -82,5 +82,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
   },
-  secret: process.env.AUTH_SECRET,
+  // Prefer the standard NEXTAUTH_SECRET in production (Vercel),
+  // fallback to AUTH_SECRET for local .env compatibility.
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
 };
