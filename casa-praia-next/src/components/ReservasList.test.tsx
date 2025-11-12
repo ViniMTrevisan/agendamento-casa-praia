@@ -1,12 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 // Mock CancelModal to expose the confirm/close callbacks easily
 jest.mock('./CancelModal', () => ({
   CancelModal: ({ dateToCancel, nomeUsuario, isLoading, onClose, onConfirm }: any) => (
     <div data-testid="mock-cancel-modal">
-      <div>{dateToCancel ? dateToCancel.toString() : ''}</div>
+      <div>{dateToCancel}</div>
       <div>{nomeUsuario}</div>
       <button onClick={onClose}>Manter Reserva</button>
       <button onClick={onConfirm} disabled={isLoading}>Sim, Cancelar</button>
@@ -44,22 +42,23 @@ describe('<ReservasList />', () => {
   });
 
   it('deve listar reservas futuras e permitir cancelar', async () => {
-    const mockDate = new Date('2025-11-25T12:00:00Z');
+    const mockDateFormatted = 'Segunda-feira, 25/11/2025';
+    const mockDateRaw = '2025-11-25';
 
     const initial = [
       {
-        id: 'res-1',
-        data: mockDate,
+        id: 1,
+        data_formatada: mockDateFormatted,
+        data_raw: mockDateRaw,
         nome_usuario: 'Vini Teste',
+        isPast: false,
       },
     ];
 
     render(<ReservasList initialReservas={initial} />);
 
-    const formatted = format(mockDate, 'EEEE, dd/MM/yyyy', { locale: ptBR });
-
     // Verifica se a reserva aparece e o botão de cancelar existe
-    expect(screen.getByText(formatted)).toBeInTheDocument();
+    expect(screen.getByText(mockDateFormatted)).toBeInTheDocument();
     expect(screen.getByText('Próxima Reserva')).toBeInTheDocument();
     const cancelBtn = screen.getByRole('button', { name: /Cancelar/i });
     expect(cancelBtn).toBeInTheDocument();
@@ -77,7 +76,7 @@ describe('<ReservasList />', () => {
     // Aguarda o fetch ser chamado e a reserva removida da lista
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();
-      expect(screen.queryByText(formatted)).not.toBeInTheDocument();
+      expect(screen.queryByText(mockDateFormatted)).not.toBeInTheDocument();
     });
   });
 });

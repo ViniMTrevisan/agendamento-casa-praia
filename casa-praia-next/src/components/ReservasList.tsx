@@ -1,21 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { format, isBefore } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 import { CancelModal } from './CancelModal';
 
+type Reserva = {
+  id: number;
+  data_formatada: string;
+  data_raw: string;
+  nome_usuario: string;
+  isPast: boolean;
+};
+
 type Props = {
-  initialReservas: any[]; // <-- MUDANÇA AQUI
+  initialReservas: Reserva[];
 };
 
 export function ReservasList({ initialReservas }: Props) {
-  const [reservas, setReservas] = useState<any[]>(initialReservas);
+  const [reservas, setReservas] = useState<Reserva[]>(initialReservas);
   const [isLoading, setIsLoading] = useState(false);
-  const [reservaToCancel, setReservaToCancel] = useState<any | null>(null);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const [reservaToCancel, setReservaToCancel] = useState<Reserva | null>(null);
 
   const handleCancelClick = (reserva: any) => { 
     setReservaToCancel(reserva);
@@ -25,8 +29,9 @@ export function ReservasList({ initialReservas }: Props) {
     if (!reservaToCancel) return;
     setIsLoading(true);
 
-    const dateKey = format(reservaToCancel.data, 'yyyy-MM-dd');
-    const reservaId = reservaToCancel.id; 
+    // Usar a data raw (UTC) para extrair o dateKey
+    const dateKey = reservaToCancel.data_raw.split('T')[0];
+    const reservaId = reservaToCancel.id;
 
     const promise = fetch(`/api/reservas/${dateKey}`, {
       method: 'DELETE',
@@ -74,28 +79,25 @@ export function ReservasList({ initialReservas }: Props) {
     <>
       <div className="overflow-hidden bg-white rounded-lg shadow-lg">
         <ul role="list" className="divide-y divide-gray-200">
-          {reservas.map((reserva: any) => { // <-- MUDANÇA AQUI
-            const isPast = isBefore(reserva.data, today);
+          {reservas.map((reserva) => {
             return (
               <li key={reserva.id} className="px-4 py-5 sm:px-6">
                 <div className="flex items-center justify-between space-x-4">
                   {/* Informações da Data */}
                   <div className="flex-1 min-w-0">
                     <p className="text-lg font-semibold text-blue-600 truncate">
-                      {format(reserva.data, 'EEEE, dd/MM/yyyy', {
-                        locale: ptBR,
-                      })}
+                      {reserva.data_formatada}
                     </p>
                     <p
                       className={`text-sm font-medium ${
-                        isPast ? 'text-gray-500' : 'text-green-600'
+                        reserva.isPast ? 'text-gray-500' : 'text-green-600'
                       }`}
                     >
-                      {isPast ? 'Reserva Concluída' : 'Próxima Reserva'}
+                      {reserva.isPast ? 'Reserva Concluída' : 'Próxima Reserva'}
                     </p>
                   </div>
                   {/* Botão de Cancelar */}
-                  {!isPast && (
+                  {!reserva.isPast && (
                     <button
                       onClick={() => handleCancelClick(reserva)}
                       className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
@@ -113,7 +115,7 @@ export function ReservasList({ initialReservas }: Props) {
       {/* Modal de Cancelamento (Reutilizado) */}
       {reservaToCancel && (
         <CancelModal
-          dateToCancel={reservaToCancel.data}
+          dateToCancel={reservaToCancel.data_formatada}
           nomeUsuario={reservaToCancel.nome_usuario}
           isLoading={isLoading}
           onClose={() => setReservaToCancel(null)}

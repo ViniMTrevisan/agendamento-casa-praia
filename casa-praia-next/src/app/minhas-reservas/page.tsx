@@ -4,10 +4,9 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Header } from '@/components/Header';
 import { ReservasList } from '@/components/ReservasList';
-import Link from 'next/link'; // <-- 1. Importar o Link
-
-// (A importação 'Reservas' foi removida para compatibilidade com o CI)
-// import type { Reservas } from '@prisma/client';
+import Link from 'next/link';
+import { format, isBefore, startOfToday, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default async function MinhasReservasPage() {
   // 1. Proteger a rota
@@ -24,6 +23,23 @@ export default async function MinhasReservasPage() {
     orderBy: {
       data: 'asc', // Ordena da mais próxima para a mais distante
     },
+  });
+
+  const today = startOfToday();
+
+  // Pré-formatar as datas no servidor para evitar problemas de fuso horário
+  const reservasFormatadas = reservas.map(reserva => {
+    const dataISO = reserva.data.toISOString();
+    const dataStr = dataISO.split('T')[0];
+    const dataUTC = parseISO(dataStr);
+    
+    return {
+      id: reserva.id,
+      data_raw: dataISO,
+      data_formatada: format(dataUTC, 'EEEE, dd/MM/yyyy', { locale: ptBR }),
+      isPast: isBefore(dataUTC, today),
+      nome_usuario: reserva.nome_usuario,
+    };
   });
 
   return (
@@ -61,8 +77,8 @@ export default async function MinhasReservasPage() {
         </div>
         {/* --- FIM DA MUDANÇA --- */}
 
-        {/* 3. Passar os dados para o Componente de Cliente */}
-        <ReservasList initialReservas={reservas} />
+        {/* 3. Passar os dados formatados para o Componente de Cliente */}
+        <ReservasList initialReservas={reservasFormatadas} />
       </main>
     </div>
   );

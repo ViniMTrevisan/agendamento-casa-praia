@@ -1,7 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CancelModal } from './CancelModal';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 // Mock do Spinner
 jest.mock('./Spinner', () => ({
@@ -9,7 +7,7 @@ jest.mock('./Spinner', () => ({
 }));
 
 describe('<CancelModal />', () => {
-  const mockDate = new Date('2025-11-25T12:00:00Z');
+  const mockDateFormatted = 'Segunda-feira, 25/11/2025';
   const mockOnClose = jest.fn();
   const mockOnConfirm = jest.fn();
 
@@ -22,7 +20,7 @@ describe('<CancelModal />', () => {
   it('deve renderizar os dados da reserva corretamente', () => {
     render(
       <CancelModal
-        dateToCancel={mockDate}
+        dateToCancel={mockDateFormatted}
         nomeUsuario="Vini Teste"
         isLoading={false}
         onClose={mockOnClose}
@@ -30,19 +28,16 @@ describe('<CancelModal />', () => {
       />
     );
 
-    // Formata a data exatamente como o componente faz
-    const formattedDate = format(mockDate, 'dd/MM/yyyy', { locale: ptBR });
-
     // Verifica se os textos estão na tela
     expect(screen.getByText('Cancelar Reserva')).toBeInTheDocument();
-    expect(screen.getByText(formattedDate)).toBeInTheDocument();
+    expect(screen.getByText(mockDateFormatted)).toBeInTheDocument();
     expect(screen.getByText('Reservado por: Vini Teste')).toBeInTheDocument();
   });
 
   it('deve chamar onClose ao clicar em "Manter Reserva"', () => {
     render(
       <CancelModal
-        dateToCancel={mockDate}
+        dateToCancel={mockDateFormatted}
         nomeUsuario="Vini Teste"
         isLoading={false}
         onClose={mockOnClose}
@@ -59,7 +54,7 @@ describe('<CancelModal />', () => {
   it('deve chamar onConfirm ao clicar em "Sim, Cancelar"', () => {
     render(
       <CancelModal
-        dateToCancel={mockDate}
+        dateToCancel={mockDateFormatted}
         nomeUsuario="Vini Teste"
         isLoading={false}
         onClose={mockOnClose}
@@ -76,7 +71,7 @@ describe('<CancelModal />', () => {
   it('deve mostrar o spinner e desabilitar botões quando isLoading é true', () => {
     render(
       <CancelModal
-        dateToCancel={mockDate}
+        dateToCancel={mockDateFormatted}
         nomeUsuario="Vini Teste"
         isLoading={true} // <-- Estado de loading
         onClose={mockOnClose}

@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { format, isBefore } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 import { CancelModal } from './CancelModal';
 import { useSession } from 'next-auth/react';
 
 type Props = {
-  initialReservas: any[];
+  initialReservas: any[]; // Recebe o tipo formatado do servidor
 };
 
 export function AdminReservasList({ initialReservas }: Props) {
@@ -19,11 +17,6 @@ export function AdminReservasList({ initialReservas }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [reservaToCancel, setReservaToCancel] = useState<any | null>(null);
 
-  // (useEffect foi removido - confiamos na página de servidor com revalidate=0)
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const handleCancelClick = (reserva: any) => {
     setReservaToCancel(reserva);
   };
@@ -32,10 +25,10 @@ export function AdminReservasList({ initialReservas }: Props) {
     if (!reservaToCancel) return;
     setIsLoading(true);
 
-    // --- A CORREÇÃO ESTÁ AQUI ---
-    // 'reservaToCancel.data' é um objeto Date, não uma string.
-    // Precisamos chamar .toISOString() nele, assim como fazemos no Calendário.
-    const dateKey = reservaToCancel.data.toISOString().split('T')[0];
+    // --- CORREÇÃO 3: USAR O DADO 'data_raw' ---
+    // Usamos a string UTC ("2025-11-13T00:00:00.000Z")
+    // e pegamos apenas a parte da data.
+    const dateKey = reservaToCancel.data_raw.split('T')[0];
     // --- FIM DA CORREÇÃO ---
     
     const reservaId = reservaToCancel.id;
@@ -86,10 +79,8 @@ export function AdminReservasList({ initialReservas }: Props) {
       <div className="overflow-hidden bg-white rounded-lg shadow-lg">
         <ul role="list" className="divide-y divide-gray-200">
           {reservas.map((reserva: any) => {
-            // Quando os dados vêm do servidor, 'reserva.data' pode ser string
-            // Então, convertemos para Date aqui para exibição
-            const reservaDate = new Date(reserva.data); 
-            const isPast = isBefore(reservaDate, today);
+            // --- CORREÇÃO 4: USAR OS DADOS PRÉ-FORMATADOS ---
+            const isPast = reserva.isPast;
             const isOurOwn = reserva.usuario_id === loggedInUserId;
 
             return (
@@ -97,9 +88,7 @@ export function AdminReservasList({ initialReservas }: Props) {
                 <div className="flex items-center justify-between space-x-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-lg font-semibold text-blue-600 truncate">
-                      {format(reservaDate, 'EEEE, dd/MM/yyyy', {
-                        locale: ptBR,
-                      })}
+                      {reserva.data_formatada} {/* <-- Usa a string formatada */}
                     </p>
                     <p className={`text-sm ${isOurOwn ? 'font-bold text-indigo-600' : 'text-gray-700'}`}>
                       Usuário: {reserva.usuario.name} ({reserva.usuario.email})
@@ -129,7 +118,7 @@ export function AdminReservasList({ initialReservas }: Props) {
 
       {reservaToCancel && (
         <CancelModal
-          dateToCancel={new Date(reservaToCancel.data)}
+          dateToCancel={reservaToCancel.data_formatada}
           nomeUsuario={reservaToCancel.nome_usuario}
           isLoading={isLoading}
           onClose={() => setReservaToCancel(null)}

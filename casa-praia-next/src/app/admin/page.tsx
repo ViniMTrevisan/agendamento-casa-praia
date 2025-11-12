@@ -3,25 +3,26 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Header } from '@/components/Header';
-import { AdminReservasList } from '@/components/AdminReservasList'; // <-- Novo
+import { AdminReservasList } from '@/components/AdminReservasList';
 import Link from 'next/link';
+import { format, isBefore, startOfToday, parseISO } from 'date-fns'; // <-- Importar 'format', 'isBefore' e 'parseISO'
+import { ptBR } from 'date-fns/locale'; // <-- Importar locale
 
+// Força a página a NUNCA usar cache (corrige o bug da "reserva fantasma")
 export const revalidate = 0;
 
 export default async function AdminPage() {
-  // 1. Proteger a rota (redundância com o middleware)
   const session = await getServerSession(authOptions);
-  // Redireciona se não estiver logado OU se não for ADMIN
   if (!session || !session.user || session.user.role !== 'ADMIN') {
-    redirect('/'); // Redireciona para a home se não for admin
+    redirect('/'); 
   }
 
-  // 2. Buscar TODOS os dados no servidor
+  // --- CORREÇÃO 1: REMOVER O FILTRO 'where' ---
+  // Agora buscamos TODAS as reservas
   const todasReservas = await prisma.reservas.findMany({
     orderBy: {
       data: 'asc',
     },
-    // Inclui os dados do usuário que fez a reserva
     include: {
       usuario: {
         select: {
@@ -31,6 +32,30 @@ export default async function AdminPage() {
       },
     },
   });
+
+  const today = startOfToday(); // Pega o início do dia em UTC (no servidor)
+
+  // --- CORREÇÃO 2: PRÉ-FORMATAR DATAS NO SERVIDOR ---
+  // Evita problemas de fuso horário convertendo a data UTC para string antes de formatar
+  const reservasFormatadas = todasReservas.map(reserva => {
+    // Pega a string ISO da data (ex: "2025-11-15T00:00:00.000Z")
+    const dataISO = reserva.data.toISOString();
+    // Extrai apenas a parte da data YYYY-MM-DD
+    const dataStr = dataISO.split('T')[0]; // ex: "2025-11-15"
+    // Parseia como data UTC para formatar corretamente
+    const dataUTC = parseISO(dataStr);
+    
+    return {
+      id: reserva.id,
+      data_raw: dataISO, // A string UTC (para a API de delete)
+      data_formatada: format(dataUTC, 'EEEE, dd/MM/yyyy', { locale: ptBR }), // A string de exibição
+      isPast: isBefore(dataUTC, today), // O servidor checa se é passado
+      usuario: reserva.usuario,
+      usuario_id: reserva.usuario_id,
+      nome_usuario: reserva.nome_usuario,
+    };
+  });
+  // --- FIM DAS CORREÇÕES ---
 
   return (
     <div className="min-h-screen">
@@ -49,8 +74,8 @@ export default async function AdminPage() {
           </Link>
         </div>
         
-        {/* 3. Passar os dados para o Componente de Cliente */}
-        <AdminReservasList initialReservas={todasReservas} />
+        {/* Passa as reservas já formatadas e completas */}
+        <AdminReservasList initialReservas={reservasFormatadas} />
       </main>
     </div>
   );

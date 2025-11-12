@@ -1,11 +1,9 @@
 'use client';
 
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Spinner } from './Spinner'; // <-- Importar o Spinner
+import { Spinner } from './Spinner';
 
 type Props = {
-  dateToCancel: Date;
+  dateToCancel: string; // Agora recebe string já formatada
   nomeUsuario: string;
   onClose: () => void;
   onConfirm: () => Promise<void>;
@@ -28,7 +26,7 @@ export function CancelModal({
         <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded-md">
           <p className="font-medium text-gray-800">Data:</p>
           <p className="text-lg font-semibold text-red-700">
-            {format(dateToCancel, 'dd/MM/yyyy', { locale: ptBR })}
+            {dateToCancel}
           </p>
           <p className="mt-1 text-sm text-gray-600">
             Reservado por: {nomeUsuario}

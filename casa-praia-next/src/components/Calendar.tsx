@@ -431,7 +431,7 @@ export function Calendar() {
       )}
       {showCancelModal && dateToCancel && (
         <CancelModal
-          dateToCancel={dateToCancel}
+          dateToCancel={format(dateToCancel, 'EEEE, dd/MM/yyyy', { locale: ptBR })}
           nomeUsuario={
             reservations[format(dateToCancel, 'yyyy-MM-dd')]?.nome_usuario || ''
           }
