@@ -9,6 +9,9 @@ on:
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./casa-praia-next
 
     steps:
       - name: Checkout code
