@@ -27,18 +27,26 @@ export default withAuth(
       // Este callback decide se o middleware deixa a requisição passar
       // Se retornar true = middleware processa a requisição
       // Se retornar false = NextAuth redireciona para /api/auth/signin
-      authorized: ({ token }) => {
+      authorized: ({ token, req }) => {
         // DEBUG: Log temporário para diagnosticar problema na Vercel
+        const cookieHeader = req.headers.get('cookie') || '';
+        const hasSessionCookie = cookieHeader.includes('next-auth.session-token') || 
+                                 cookieHeader.includes('__Secure-next-auth.session-token');
+        
         console.log('[MIDDLEWARE AUTH]', {
           hasToken: !!token,
+          hasSessionCookie,
           secret: process.env.NEXTAUTH_SECRET ? 'SET' : 'MISSING',
           authSecret: process.env.AUTH_SECRET ? 'SET' : 'MISSING',
+          url: req.url,
         });
         
         // Se tem token válido, está autorizado a continuar
         return !!token;
       },
     },
+    // CRÍTICO: Adicionar o secret explicitamente para o middleware
+    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   }
 );
 
