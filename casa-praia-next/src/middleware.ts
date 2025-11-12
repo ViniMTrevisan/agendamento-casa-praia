@@ -24,6 +24,10 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+    // ✅ CORREÇÃO: Especificar cookieName explícito para edge runtime
+    cookieName: process.env.NODE_ENV === 'production' 
+      ? '__Secure-next-auth.session-token'
+      : 'next-auth.session-token',
   });
 
   console.log('[MIDDLEWARE TOKEN]', {
