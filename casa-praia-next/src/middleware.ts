@@ -33,11 +33,18 @@ export default withAuth(
         const hasSessionCookie = cookieHeader.includes('next-auth.session-token') || 
                                  cookieHeader.includes('__Secure-next-auth.session-token');
         
+        // Pegar os primeiros caracteres do secret para comparar (SEM expor o secret completo)
+        const nextauthSecret = process.env.NEXTAUTH_SECRET || '';
+        const authSecret = process.env.AUTH_SECRET || '';
+        
         console.log('[MIDDLEWARE AUTH]', {
           hasToken: !!token,
           hasSessionCookie,
           secret: process.env.NEXTAUTH_SECRET ? 'SET' : 'MISSING',
           authSecret: process.env.AUTH_SECRET ? 'SET' : 'MISSING',
+          secretMatch: nextauthSecret === authSecret,
+          secretPrefix: nextauthSecret.substring(0, 10) + '...',
+          authSecretPrefix: authSecret.substring(0, 10) + '...',
           url: req.url,
         });
         
