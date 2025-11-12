@@ -1,61 +1,38 @@
-import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const { pathname } = req.nextUrl;
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-    // DEBUG: Log temporário para diagnosticar problema na Vercel
-    console.log('[MIDDLEWARE DEBUG]', {
-      pathname,
-      hasToken: !!token,
-      tokenData: token ? { id: token.id, role: token.role, username: token.username } : null,
-    });
-
-    // Verifica se é rota de admin e se o usuário NÃO é admin
-    if (pathname.startsWith('/admin') && token?.role !== 'ADMIN') {
-      // Redireciona para home (usuário comum tentando acessar área admin)
-      return NextResponse.redirect(new URL('/', req.url));
-    }
-
-    // Se chegou aqui, tem token válido e pode acessar
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      // Este callback decide se o middleware deixa a requisição passar
-      // Se retornar true = middleware processa a requisição
-      // Se retornar false = NextAuth redireciona para /api/auth/signin
-      authorized: ({ token, req }) => {
-        // DEBUG: Log temporário para diagnosticar problema na Vercel
-        const cookieHeader = req.headers.get('cookie') || '';
-        const hasSessionCookie = cookieHeader.includes('next-auth.session-token') || 
-                                 cookieHeader.includes('__Secure-next-auth.session-token');
-        
-        // Pegar os primeiros caracteres do secret para comparar (SEM expor o secret completo)
-        const nextauthSecret = process.env.NEXTAUTH_SECRET || '';
-        const authSecret = process.env.AUTH_SECRET || '';
-        
-        console.log('[MIDDLEWARE AUTH]', {
-          hasToken: !!token,
-          hasSessionCookie,
-          secret: process.env.NEXTAUTH_SECRET ? 'SET' : 'MISSING',
-          authSecret: process.env.AUTH_SECRET ? 'SET' : 'MISSING',
-          secretMatch: nextauthSecret === authSecret,
-          secretPrefix: nextauthSecret.substring(0, 10) + '...',
-          authSecretPrefix: authSecret.substring(0, 10) + '...',
-          url: req.url,
-        });
-        
-        // Se tem token válido, está autorizado a continuar
-        return !!token;
-      },
-    },
-    // CRÍTICO: Adicionar o secret explicitamente para o middleware
+  // Pega o token JWT do cookie
+  const token = await getToken({
+    req,
     secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  });
+
+  console.log('[MIDDLEWARE]', {
+    pathname,
+    hasToken: !!token,
+    tokenData: token ? { id: token.id, role: token.role, username: token.username } : null,
+  });
+
+  // Se não tem token, redireciona para login
+  if (!token) {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
   }
-);
+
+  // Verifica se é rota de admin e se o usuário NÃO é admin
+  if (pathname.startsWith('/admin') && token.role !== 'ADMIN') {
+    // Redireciona para home (usuário comum tentando acessar área admin)
+    return NextResponse.redirect(new URL('/', req.url));
+  }
+
+  // Se chegou aqui, está autenticado e pode acessar
+  return NextResponse.next();
+}
 
 // Protege apenas as PÁGINAS (não APIs)
 // APIs fazem sua própria validação com getAuthenticatedUser()
