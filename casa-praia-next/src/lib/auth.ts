@@ -82,7 +82,8 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
   },
-  // Prefer the standard NEXTAUTH_SECRET in production (Vercel),
-  // fallback to AUTH_SECRET for local .env compatibility.
-  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
+  // Use a single secret source to avoid mismatch between environments
+  // NextAuth v4 checks both NEXTAUTH_SECRET and AUTH_SECRET internally
+  // We ensure both are set to the same value in production
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 };
