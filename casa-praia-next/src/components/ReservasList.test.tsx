@@ -1,0 +1,83 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+// Mock CancelModal to expose the confirm/close callbacks easily
+jest.mock('./CancelModal', () => ({
+  CancelModal: ({ dateToCancel, nomeUsuario, isLoading, onClose, onConfirm }: any) => (
+    <div data-testid="mock-cancel-modal">
+      <div>{dateToCancel ? dateToCancel.toString() : ''}</div>
+      <div>{nomeUsuario}</div>
+      <button onClick={onClose}>Manter Reserva</button>
+      <button onClick={onConfirm} disabled={isLoading}>Sim, Cancelar</button>
+    </div>
+  ),
+}));
+
+// Mock react-hot-toast so it just returns the passed promise
+jest.mock('react-hot-toast', () => ({
+  toast: {
+    promise: (p: Promise<any>) => p,
+  },
+}));
+
+import { ReservasList } from './ReservasList';
+
+describe('<ReservasList />', () => {
+  beforeEach(() => {
+    // Reset fetch mock
+    // @ts-ignore
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+    );
+  });
+
+  it('deve mostrar mensagem quando não há reservas', () => {
+    render(<ReservasList initialReservas={[]} />);
+
+    expect(
+      screen.getByText('Você ainda não tem reservas.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Volte ao calendário para agendar sua visita.')
+    ).toBeInTheDocument();
+  });
+
+  it('deve listar reservas futuras e permitir cancelar', async () => {
+    const mockDate = new Date('2025-11-25T12:00:00Z');
+
+    const initial = [
+      {
+        id: 'res-1',
+        data: mockDate,
+        nome_usuario: 'Vini Teste',
+      },
+    ];
+
+    render(<ReservasList initialReservas={initial} />);
+
+    const formatted = format(mockDate, 'EEEE, dd/MM/yyyy', { locale: ptBR });
+
+    // Verifica se a reserva aparece e o botão de cancelar existe
+    expect(screen.getByText(formatted)).toBeInTheDocument();
+    expect(screen.getByText('Próxima Reserva')).toBeInTheDocument();
+    const cancelBtn = screen.getByRole('button', { name: /Cancelar/i });
+    expect(cancelBtn).toBeInTheDocument();
+
+    // Clicar para abrir o modal (mock)
+    fireEvent.click(cancelBtn);
+
+    // O modal mock deve aparecer
+    expect(screen.getByTestId('mock-cancel-modal')).toBeInTheDocument();
+
+    // Clicar em confirmar no modal (mock) — isso aciona a chamada fetch
+    const confirmBtn = screen.getByRole('button', { name: /Sim, Cancelar/i });
+    fireEvent.click(confirmBtn);
+
+    // Aguarda o fetch ser chamado e a reserva removida da lista
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+      expect(screen.queryByText(formatted)).not.toBeInTheDocument();
+    });
+  });
+});
