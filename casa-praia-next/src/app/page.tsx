@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Calendar } from '@/components/Calendar';
 
+export const revalidate = 0;
+
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
 

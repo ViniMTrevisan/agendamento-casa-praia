@@ -6,12 +6,10 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // Proteger a UI do Admin E a API do Admin
     if (
       (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) &&
       token?.role !== 'ADMIN'
     ) {
-      // Se não for admin, retorna "Não autorizado"
       return new NextResponse('Não autorizado', { status: 403 });
     }
   },
@@ -22,12 +20,16 @@ export default withAuth(
   }
 );
 
-// --- MUDANÇA AQUI: Adicionado '/api/admin/:path*' ---
+// --- CORREÇÃO AQUI: O matcher precisa das rotas raiz ---
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/api/admin/:path*', // <-- Protege a nova API de admin
-    '/api/reservas/:path*',
+    '/admin', // A página de admin
+    '/admin/:path*', // Sub-páginas de admin
+    '/api/admin', // A API de admin
+    '/api/admin/:path*', // Sub-rotas da API de admin
+    '/api/reservas', // A API de reservas (raiz)
+    '/api/reservas/:path*', // Sub-rotas (como delete)
+    '/api/profile', // A API de profile
     '/api/profile/:path*',
   ],
 };
