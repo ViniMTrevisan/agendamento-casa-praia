@@ -16,6 +16,7 @@ describe('<Header />', () => {
     name: 'Vini Trevisan',
     email: 'vini@teste.com',
     username: 'vinitrevisan',
+    role: 'user'
   };
 
   beforeEach(() => {

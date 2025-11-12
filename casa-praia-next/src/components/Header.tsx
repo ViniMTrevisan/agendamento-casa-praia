@@ -17,22 +17,31 @@ export function Header({ user }: HeaderProps) {
           🏖️ Casa de Praia
         </Link>
 
-        {/* --- MUDANÇA AQUI: Adicionado 'Meu Perfil' --- */}
         <div className="flex items-center space-x-4">
           
           <Link 
             href="/minhas-reservas" 
-            className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 bg-indigo-600 rounded-md sm:block hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 border border-white rounded-md sm:block hover:bg-white hover:text-indigo-700"
           >
             Minhas Reservas
           </Link>
 
           <Link 
             href="/perfil" 
-            className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 bg-indigo-600 rounded-md sm:block hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 border border-white rounded-md sm:block hover:bg-white hover:text-indigo-700"
           >
             Meu Perfil
           </Link>
+          
+          {/* --- MUDANÇA AQUI: Link de Admin Condicional --- */}
+          {user.role === 'ADMIN' && (
+            <Link 
+              href="/admin" 
+              className="hidden px-3 py-1 text-sm font-medium text-white transition-colors duration-200 border border-white rounded-md sm:block hover:bg-white hover:text-indigo-700"
+            >
+              Admin
+            </Link>
+          )}
           {/* --- FIM DA MUDANÇA --- */}
           
           <span className="hidden text-white sm:block">
